@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  font-family: "Kantumruy Pro", "Noto Sans Khmer", sans-serif;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-white font-medium shadow-soft hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-slate-200 px-5 py-2.5 text-slate-700 font-medium hover:bg-slate-50 transition-colors;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-2 text-red-600 font-medium hover:bg-red-100 transition-colors;
+  }
+  .input-field {
+    @apply w-full rounded-xl border border-slate-200 px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition;
+  }
+  .card {
+    @apply bg-white rounded-xl2 shadow-card border border-slate-100 p-6;
+  }
+  .label {
+    @apply block text-sm font-medium text-slate-600 mb-1.5;
+  }
+}

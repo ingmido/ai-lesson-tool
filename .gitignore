@@ -1,0 +1,25 @@
+# --- Backend (Python) ---
+backend/venv/
+backend/venv2/
+backend/venv3/
+backend/__pycache__/
+backend/routes/__pycache__/
+backend/services/__pycache__/
+backend/*.pyc
+backend/app.db
+backend/.env
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/exports/*
+!backend/exports/.gitkeep
+
+# --- Frontend (Node) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+*.log
