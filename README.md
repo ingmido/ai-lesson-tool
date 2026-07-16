@@ -73,6 +73,51 @@ Frontend នឹងរត់នៅ `http://localhost:5173` ហើយហៅ backen
 
 ---
 
+## ដាក់ដំណើរការជាសាធារណៈ (Deploy ដើម្បីឲ្យអ្នកដទៃប្រើបាន)
+
+GitHub ខ្លួនឯង **មិនអាចរត់** Flask backend ឬបម្រើ website ផ្ទាល់បានទេ — វាគ្រាន់តែផ្ទុកកូដ។ ដើម្បីឲ្យអ្នកដទៃចូលប្រើវេបសាយបាន ត្រូវ **deploy** ទៅ hosting ។ ខាងក្រោមជាវិធីឥតគិតថ្លៃ (ឬថោក) ដែលងាយបំផុត៖ **Render** សម្រាប់ backend + **Netlify** សម្រាប់ frontend។
+
+### ជំហានទី១៖ Deploy Backend (Render.com)
+
+1. ចូល https://render.com → Sign up ដោយ GitHub account ដដែល
+2. ចុច **New → Web Service** → ជ្រើសរើស repo `ai-lesson-tool`
+3. កំណត់៖
+   - **Root Directory**: `backend`
+   - **Runtime**: Python 3
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120` (Render រកឃើញពី `Procfile` ស្វ័យប្រវត្តិផងដែរ)
+4. ក្នុងផ្នែក **Environment Variables** (នេះជាកន្លែងដាក់ API key — មិនមែនក្នុង Git ទេ) ដាក់៖
+   - `AI_PROVIDER` = `gemini` (ឬ `anthropic`)
+   - `GEMINI_API_KEY` = key របស់អ្នក
+   - `SECRET_KEY` = អក្សរចៃដន្យវែងៗ
+   - `JWT_SECRET_KEY` = អក្សរចៃដន្យវែងៗមួយទៀត
+5. ចុច **Create Web Service** — Render នឹង build និង deploy ស្វ័យប្រវត្តិ។ URL ដែលបានគឺប្រហែល `https://ai-lesson-tool-xxxx.onrender.com`
+
+**ចំណាំសំខាន់៖**
+- Render free tier "spins down" បន្ទាប់ពី inactive ២០នាទី — request ដំបូងក្រោយពីនោះនឹងយឺត (~៣០វិនាទី)។
+- **Disk មិនស្ថិតស្ថេរទេលើ free tier** — រាល់ពេល redeploy, ឯកសារ `app.db`, `uploads/`, `exports/` នឹងលុបចោល។ សម្រាប់ការប្រើប្រាស់ពិតប្រាកដ គួរបន្ថែម Render's **Persistent Disk** (មានតម្លៃបន្តិច) ឬប្តូរទៅ managed database (Postgres)។
+- **PDF export នឹងមិនដំណើរការទេ** លើ Render free tier ព្រោះគ្មាន LibreOffice ដំឡើង — Word/PowerPoint export នៅតែដំណើរការធម្មតា។
+
+### ជំហានទី២៖ Deploy Frontend (Netlify)
+
+1. ចូល https://netlify.com → Sign up ដោយ GitHub
+2. ចុច **Add new site → Import an existing project** → ជ្រើសរើស repo `ai-lesson-tool`
+3. កំណត់៖
+   - **Base directory**: `frontend`
+   - **Build command**: `npm run build`
+   - **Publish directory**: `frontend/dist`
+4. ក្នុងផ្នែក **Environment variables** ដាក់៖
+   - `VITE_API_BASE_URL` = URL របស់ backend ពី Render (ឧ. `https://ai-lesson-tool-xxxx.onrender.com`) — **កុំដាក់ `/` ខាងចុង**
+5. ចុច **Deploy** — Netlify ផ្តល់ URL ដូចជា `https://ai-lesson-tool.netlify.app` ដែលអ្នកអាចចែករំលែកបានភ្លាមៗ
+
+ចំណាំ៖ `VITE_API_BASE_URL` ត្រូវកំណត់ **មុននឹង build** ព្រោះ Vite baked វាចូលក្នុងឯកសារ JS ស្ថិតស្ថេរតាំងពីពេល build។ បើផ្លាស់ប្តូរ backend URL ក្រោយ ត្រូវ redeploy frontend ម្តងទៀត។
+
+### ការធ្វើតេស្តមុន deploy ជាសាធារណៈ
+
+មុននឹងចែករំលែក URL ទៅអ្នកដទៃ សូមចូល URL frontend ដោយខ្លួនឯងសិន៖ ចុះឈ្មោះគណនីថ្មី, សាកល្បង generate កិច្ចតែងការ, ទាញយក Word — ដើម្បីប្រាកដថារបស់ទាំងអស់ភ្ជាប់គ្នាត្រឹមត្រូវ។
+
+---
+
 ## របៀបប្រើប្រាស់
 
 1. ចុះឈ្មោះគណនីគ្រូ (ឈ្មោះ, ភេទ, ថ្ងៃខែឆ្នាំកំណើត, សាលា, មុខវិជ្ជា, រូបថត)
