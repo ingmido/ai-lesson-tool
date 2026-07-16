@@ -60,7 +60,7 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import { useAuthStore } from "../store/auth";
-import api from "../api/axios";
+import api, { API_ORIGIN } from "../api/axios";
 
 const auth = useAuthStore();
 const form = reactive({
@@ -85,7 +85,7 @@ onMounted(() => {
     form.date_of_birth = u.date_of_birth || "";
     form.school_name = u.school_name || "";
     form.subject = u.subject || "";
-    if (u.photo_path) photoPreview.value = `/uploads/${u.photo_path}`;
+    if (u.photo_path) photoPreview.value = `${API_ORIGIN}/uploads/${u.photo_path}`;
   }
 });
 

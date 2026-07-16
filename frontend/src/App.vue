@@ -56,7 +56,7 @@
           <div class="flex items-center gap-3 mb-3">
             <img
               v-if="auth.user?.photo_path"
-              :src="`/uploads/${auth.user.photo_path}`"
+              :src="`${apiOrigin}/uploads/${auth.user.photo_path}`"
               class="w-9 h-9 rounded-full object-cover"
             />
             <div v-else class="w-9 h-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-semibold">
@@ -92,7 +92,9 @@
 import { ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "./store/auth";
+import { API_ORIGIN } from "./api/axios";
 
+const apiOrigin = API_ORIGIN;
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
