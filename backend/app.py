@@ -29,12 +29,14 @@ def create_app():
     from routes.admin import admin_bp
     from routes.ai_tools import ai_bp
     from routes.export import export_bp
+    from routes.chat import chat_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(profile_bp, url_prefix="/api/profile")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(ai_bp, url_prefix="/api/ai")
     app.register_blueprint(export_bp, url_prefix="/api/export")
+    app.register_blueprint(chat_bp, url_prefix="/api/chat")
 
     @app.get("/api/health")
     def health():

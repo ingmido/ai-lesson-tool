@@ -274,9 +274,12 @@ SCHEMAS = {
 
 TOOL_INSTRUCTIONS = {
     "lesson_plan": (
-        "អ្នកគឺជាគ្រូបង្រៀនជំនាញខ្ពស់នៅកម្ពុជា។ សូមអានខ្លឹមសារមេរៀនពីឯកសារ/រូបភាពដែលបានភ្ជាប់ "
-        "រួចបង្កើត 'កិច្ចតែងការបង្រៀន' ពេញលេញជាភាសាខ្មែរ ដោយធ្វើតាមទម្រង់ស្តង់ដារក្រសួងអប់រំកម្ពុជា "
-        "(ដូចគំរូ) ។ សូមប្រើវិធីសាស្ត្របង្រៀនដែលបានស្នើ ហើយសរសេរខ្លឹមសារមេរៀនប្រចាំថ្ងៃឲ្យលម្អិត គ្រប់គ្រាន់សម្រាប់ម៉ោងបង្រៀនដែលបានផ្តល់។"
+        "អ្នកគឺជាគ្រូបង្រៀនជំនាញខ្ពស់នៅកម្ពុជា។ សូមអានខ្លឹមសារមេរៀន (ពីឯកសារ/រូបភាពដែលបានភ្ជាប់ "
+        "និង/ឬពីអត្ថបទដែលគ្រូបានសរសេរផ្ទាល់ខាងក្រោម) រួចបង្កើត 'កិច្ចតែងការបង្រៀន' ពេញលេញជាភាសាខ្មែរ "
+        "ដោយធ្វើតាមទម្រង់ស្តង់ដារក្រសួងអប់រំកម្ពុជា (ដូចគំរូ)។ សូមប្រើវិធីសាស្ត្របង្រៀនដែលបានស្នើ "
+        "ហើយសរសេរខ្លឹមសារមេរៀនប្រចាំថ្ងៃឲ្យលម្អិត គ្រប់គ្រាន់សម្រាប់ម៉ោងបង្រៀនដែលបានផ្តល់។ "
+        "ប្រសិនបើគ្រូបានសរសេរខ្លឹមសារមេរៀនផ្ទាល់ សូមប្រើអត្ថបទនោះជាមូលដ្ឋានចម្បង ហើយរៀបចំរចនាសម្ព័ន្ធ "
+        "ឲ្យត្រូវតាមទម្រង់កិច្ចតែងការវិញ មិនមែនចម្លងតែម្តងទេ។"
     ),
     "slide": (
         "អ្នកគឺជាអ្នកជំនាញរៀបចំបទបង្ហាញអប់រំដូចម៉ូដែលរបស់ក្រសួងអប់រំ យុវជន និងកីឡាកម្ពុជា។ "
@@ -298,16 +301,25 @@ TOOL_INSTRUCTIONS = {
 }
 
 
-def generate_content(tool_type, hours, lesson_date, method, filepaths, extra_notes=""):
+def generate_content(tool_type, hours, lesson_date, method, filepaths, extra_notes="", lesson_text=""):
     """
     tool_type: 'lesson_plan' | 'slide' | 'test' | 'curriculum'
     filepaths: list of uploaded source files (photo of textbook page, existing lesson plan, etc.)
+    lesson_text: optional lesson content typed directly by the teacher, used instead of
+                 (or in addition to) uploaded files.
     Returns: dict (parsed JSON matching the schema for tool_type)
     """
     if tool_type not in SCHEMAS:
         raise ValueError(f"មិនស្គាល់ tool_type: {tool_type}")
+    if not filepaths and not (lesson_text and lesson_text.strip()):
+        raise ValueError("ត្រូវការឯកសារ/រូបភាព ឬអត្ថបទមេរៀនយ៉ាងហោចណាស់មួយ")
 
     method_label = METHOD_LABELS.get(method, method or "")
+    lesson_text_block = (
+        f"\nខ្លឹមសារមេរៀនដែលគ្រូបានសរសេរផ្ទាល់៖\n\"\"\"\n{lesson_text.strip()}\n\"\"\"\n"
+        if lesson_text and lesson_text.strip()
+        else ""
+    )
     prompt_text = f"""{TOOL_INSTRUCTIONS[tool_type]}
 
 ព័ត៌មានបន្ថែម៖
@@ -315,7 +327,7 @@ def generate_content(tool_type, hours, lesson_date, method, filepaths, extra_not
 - កាលបរិច្ឆេទបង្រៀន៖ {lesson_date}
 - វិធីសាស្ត្របង្រៀន៖ {method_label}
 - កំណត់សម្គាល់បន្ថែម៖ {extra_notes or "គ្មាន"}
-
+{lesson_text_block}
 សូមឆ្លើយតបជា JSON សុទ្ធសាធតែមួយប៉ុណ្ណោះ (គ្មានអត្ថបទពន្យល់ គ្មាន ```json fences) ដោយអនុវត្តតាមទម្រង់ (schema) ខាងក្រោមយ៉ាងតឹងរ៉ឹង៖
 
 {SCHEMAS[tool_type]}
@@ -357,3 +369,58 @@ def _generate_with_gemini(prompt_text, filepaths):
         ),
     )
     return _extract_json(response.text)
+
+
+CHAT_SYSTEM_PROMPT = (
+    "អ្នកគឺជា AI ជំនួយការគាំទ្រសម្រាប់កម្មវិធី 'ជំនួយការគ្រូ AI' — ឧបករណ៍ជួយគ្រូបង្រៀនកម្ពុជាបង្កើតកិច្ចតែងការបង្រៀន, "
+    "ស្លាយ, តេស្ត, និងកម្មវិធីសិក្សាដោយប្រើ AI។ អ្នកកំពុងឆ្លើយសំណួររបស់គ្រូបង្រៀនម្នាក់ក្នុងប្រអប់ជជែក (chat) ។ "
+    "ឆ្លើយជាភាសាខ្មែរ ខ្លីៗ ច្បាស់លាស់ ស្និទ្ធស្នាល និងមានប្រយោជន៍។ បើសំណួរទាក់ទងនឹងរបៀបប្រើប្រាស់កម្មវិធីនេះ សូមណែនាំតាមចំណេះដឹងទូទៅ។ "
+    "បើសំណួរជាបញ្ហាបច្ចេកទេស ស្មុគស្មាញ ឬទាមទារសិទ្ធិអ្នកគ្រប់គ្រង (ឧ. ការទូទាត់ប្រាក់, បញ្ហាគណនី, បណ្តឹង) សូមប្រាប់ថាអ្នកនឹងជូនដំណឹងទៅ admin ជូនអ្នកប្រើ។ "
+    "កុំប្រឌិតព័ត៌មានមិនប្រាកដ។"
+)
+
+
+def chat_reply(history):
+    """
+    Generate a short conversational reply for the support chat.
+    history: list of {"role": "user"|"assistant", "content": str}, oldest first.
+    Returns: plain text reply (str).
+    """
+    provider = _provider()
+    if provider == "gemini":
+        return _chat_reply_gemini(history)
+    return _chat_reply_anthropic(history)
+
+
+def _chat_reply_anthropic(history):
+    client = _anthropic_client()
+    messages = [{"role": h["role"], "content": h["content"]} for h in history]
+    message = client.messages.create(
+        model=ANTHROPIC_MODEL,
+        max_tokens=1000,
+        system=CHAT_SYSTEM_PROMPT,
+        messages=messages,
+    )
+    return "".join(block.text for block in message.content if block.type == "text").strip()
+
+
+def _chat_reply_gemini(history):
+    from google.genai import types
+
+    client = _gemini_client()
+    contents = [
+        types.Content(
+            role=("model" if h["role"] == "assistant" else "user"),
+            parts=[types.Part.from_text(text=h["content"])],
+        )
+        for h in history
+    ]
+    response = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            system_instruction=CHAT_SYSTEM_PROMPT,
+            max_output_tokens=1000,
+        ),
+    )
+    return (response.text or "").strip()

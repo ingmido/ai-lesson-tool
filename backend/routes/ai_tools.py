@@ -34,6 +34,7 @@ def generate(tool_type):
     extra_notes = request.form.get("extra_notes", "")
     title = request.form.get("title", "")
     style = request.form.get("style", "teal_light")
+    lesson_text = request.form.get("lesson_text", "")
 
     saved_paths = []
     saved_names = []
@@ -45,8 +46,8 @@ def generate(tool_type):
             saved_paths.append(path)
             saved_names.append(fname)
 
-    if not saved_paths:
-        return jsonify({"error": "សូមភ្ជាប់ឯកសារ ឬរូបថតយ៉ាងហោចណាស់មួយ"}), 400
+    if not saved_paths and not lesson_text.strip():
+        return jsonify({"error": "សូមភ្ជាប់ឯកសារ/រូបថត ឬសរសេរខ្លឹមសារមេរៀនផ្ទាល់យ៉ាងហោចណាស់មួយយ៉ាង"}), 400
 
     try:
         result_json = generate_content(
@@ -56,6 +57,7 @@ def generate(tool_type):
             method=method,
             filepaths=saved_paths,
             extra_notes=extra_notes,
+            lesson_text=lesson_text,
         )
     except Exception as e:
         current_app.logger.exception("AI generation failed")

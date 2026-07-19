@@ -19,6 +19,7 @@ class User(db.Model):
 
     role = db.Column(db.String(20), default="user", nullable=False)  # 'admin' | 'user'
     is_active = db.Column(db.Boolean, default=True)
+    chat_ai_enabled = db.Column(db.Boolean, default=True)  # True: AI auto-replies in support chat; False: admin only
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     generations = db.relationship("Generation", backref="user", lazy=True, cascade="all, delete-orphan")
@@ -35,6 +36,7 @@ class User(db.Model):
             "photo_path": self.photo_path,
             "role": self.role,
             "is_active": self.is_active,
+            "chat_ai_enabled": self.chat_ai_enabled,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -73,5 +75,33 @@ class Generation(db.Model):
             "lesson_hours": self.lesson_hours,
             "content_json": self.content_json,
             "source_filename": self.source_filename,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class ChatMessage(db.Model):
+    """
+    Simple one-thread-per-user support chat between a teacher (user) and admin.
+    `user_id` always identifies which teacher's conversation this belongs to,
+    regardless of who actually sent the message (teacher or admin).
+    """
+    __tablename__ = "chat_messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    sender_role = db.Column(db.String(10), nullable=False)  # 'user' | 'admin' | 'ai'
+    sender_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)  # null for AI-authored messages
+    content = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "sender_role": self.sender_role,
+            "sender_id": self.sender_id,
+            "content": self.content,
+            "is_read": self.is_read,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

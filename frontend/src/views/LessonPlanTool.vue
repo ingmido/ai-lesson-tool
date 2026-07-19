@@ -1,19 +1,48 @@
 <template>
   <div class="max-w-5xl mx-auto">
     <h1 class="text-2xl font-bold text-slate-800 mb-1">📝 កិច្ចតែងការបង្រៀន AI</h1>
-    <p class="text-slate-400 text-sm mb-6">ថតរូប ឬបញ្ចូលឯកសារមេរៀន ហើយឲ្យ AI បង្កើតកិច្ចតែងការពេញលេញ</p>
+    <p class="text-slate-400 text-sm mb-6">ថតរូប/បញ្ចូលឯកសារ ឬសរសេរខ្លឹមសារមេរៀនផ្ទាល់ ហើយឲ្យ AI បង្កើតកិច្ចតែងការពេញលេញ</p>
 
     <div class="grid lg:grid-cols-2 gap-6">
       <!-- Input form -->
       <form @submit.prevent="handleGenerate" class="card space-y-4 h-fit">
         <div v-if="error" class="rounded-xl bg-red-50 text-red-600 text-sm px-4 py-3">{{ error }}</div>
 
-        <div>
+        <div class="flex gap-2 p-1 bg-slate-100 rounded-xl">
+          <button
+            type="button"
+            class="flex-1 text-sm font-medium py-2 rounded-lg transition-colors"
+            :class="inputMode === 'file' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500'"
+            @click="inputMode = 'file'"
+          >
+            📎 ផ្ទុកឯកសារ/រូបថត
+          </button>
+          <button
+            type="button"
+            class="flex-1 text-sm font-medium py-2 rounded-lg transition-colors"
+            :class="inputMode === 'text' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500'"
+            @click="inputMode = 'text'"
+          >
+            ✍️ សរសេរផ្ទាល់
+          </button>
+        </div>
+
+        <div v-if="inputMode === 'file'">
           <label class="label">ឯកសារ ឬរូបថតមេរៀន (ជ្រើសបានច្រើន)</label>
-          <input type="file" multiple accept="image/*,application/pdf" @change="onFiles" class="text-sm text-slate-500" required />
+          <input type="file" multiple accept="image/*,application/pdf" @change="onFiles" class="text-sm text-slate-500" />
           <div v-if="files.length" class="flex flex-wrap gap-2 mt-2">
             <span v-for="(f, i) in files" :key="i" class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-lg">{{ f.name }}</span>
           </div>
+        </div>
+
+        <div v-else>
+          <label class="label">សរសេរខ្លឹមសារមេរៀនផ្ទាល់</label>
+          <textarea
+            v-model="form.lesson_text"
+            rows="6"
+            class="input-field"
+            placeholder="ឧ. ជំពូកទី២ មេរៀនទី៣៖ ការគ្រប់គ្រងប្រព័ន្ធនិងបណ្ដាញ។ គោលបំណង៖ សិស្សអាចកំណត់មុខងាររបស់ប្រព័ន្ធ... (សរសេរខ្លឹមសារ ឬចម្លងអត្ថបទពីសៀវភៅមកដាក់ទីនេះ)"
+          ></textarea>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -152,8 +181,9 @@ const FieldEdit = defineComponent({
   },
 });
 
+const inputMode = ref("file");
 const files = ref([]);
-const form = reactive({ hours: "1", lesson_date: "", method: "inquiry", extra_notes: "" });
+const form = reactive({ hours: "1", lesson_date: "", method: "inquiry", extra_notes: "", lesson_text: "" });
 const loading = ref(false);
 const saving = ref(false);
 const error = ref("");
@@ -182,16 +212,25 @@ function onFiles(e) {
 }
 
 async function handleGenerate() {
-  if (!files.value.length) {
+  if (inputMode.value === "file" && !files.value.length) {
     error.value = "សូមភ្ជាប់ឯកសារ ឬរូបថតយ៉ាងហោចណាស់មួយ";
+    return;
+  }
+  if (inputMode.value === "text" && !form.lesson_text.trim()) {
+    error.value = "សូមសរសេរខ្លឹមសារមេរៀន";
     return;
   }
   loading.value = true;
   error.value = "";
   try {
     const fd = new FormData();
-    files.value.forEach((f) => fd.append("files", f));
-    Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+    if (inputMode.value === "file") {
+      files.value.forEach((f) => fd.append("files", f));
+    }
+    Object.entries(form).forEach(([k, v]) => {
+      if (k === "lesson_text" && inputMode.value === "file") return;
+      fd.append(k, v);
+    });
 
     const { data } = await api.post(`/ai/${TOOL_TYPE}/generate`, fd, {
       headers: { "Content-Type": "multipart/form-data" },

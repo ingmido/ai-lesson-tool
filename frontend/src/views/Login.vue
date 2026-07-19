@@ -30,10 +30,6 @@
           <RouterLink to="/register" class="text-brand-600 font-medium hover:underline">ចុះឈ្មោះ</RouterLink>
         </p>
       </form>
-
-      <p class="text-center text-xs text-slate-400 mt-4">
-        គណនី Admin លំនាំដើម៖ admin / admin1234
-      </p>
     </div>
   </div>
 </template>

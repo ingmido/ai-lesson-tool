@@ -47,6 +47,15 @@
           <RouterLink to="/profile" class="nav-link" active-class="nav-link-active">
             <span>👤</span> ប្រវត្តិរូប
           </RouterLink>
+          <RouterLink v-if="!auth.isAdmin" to="/chat" class="nav-link" active-class="nav-link-active">
+            <span>💬</span> ជជែកជាមួយ Admin
+          </RouterLink>
+          <RouterLink v-if="auth.isAdmin" to="/admin/chat" class="nav-link" active-class="nav-link-active">
+            <span>💬</span> សារគាំទ្រ
+            <span v-if="adminUnread" class="ml-auto text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5">
+              {{ adminUnread }}
+            </span>
+          </RouterLink>
           <RouterLink v-if="auth.isAdmin" to="/admin" class="nav-link" active-class="nav-link-active">
             <span>⚙️</span> គ្រប់គ្រងអ្នកប្រើ
           </RouterLink>
@@ -89,16 +98,18 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "./store/auth";
 import { API_ORIGIN } from "./api/axios";
+import api from "./api/axios";
 
 const apiOrigin = API_ORIGIN;
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const sidebarOpen = ref(false);
+const adminUnread = ref(0);
 
 const isBareLayout = computed(() => ["login", "register"].includes(route.name));
 
@@ -106,6 +117,39 @@ function handleLogout() {
   auth.logout();
   router.push({ name: "login" });
 }
+
+let unreadTimer = null;
+
+async function pollAdminUnread() {
+  if (!auth.isAdmin) return;
+  try {
+    const { data } = await api.get("/chat/admin/unread-total");
+    adminUnread.value = data.unread;
+  } catch {
+    // ignore transient errors
+  }
+}
+
+onMounted(() => {
+  if (auth.isAuthenticated && auth.isAdmin) {
+    pollAdminUnread();
+    unreadTimer = setInterval(pollAdminUnread, 8000);
+  }
+});
+
+watch(
+  () => auth.isAuthenticated,
+  (isAuth) => {
+    if (isAuth && auth.isAdmin && !unreadTimer) {
+      pollAdminUnread();
+      unreadTimer = setInterval(pollAdminUnread, 8000);
+    }
+  }
+);
+
+onUnmounted(() => {
+  if (unreadTimer) clearInterval(unreadTimer);
+});
 </script>
 
 <style scoped>
