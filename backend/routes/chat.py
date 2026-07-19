@@ -39,21 +39,31 @@ def _build_ai_history(user_id, limit=20):
     return history
 
 
+AI_FAILURE_FALLBACK = (
+    "🤖 សូមទោស! AI ជំនួយការមិនអាចឆ្លើយបានទេពេលនេះ (ប្រព័ន្ធកំពុងមមាញឹក ឬដល់ដែនកំណត់ប្រើប្រាស់ថ្ងៃនេះ)។ "
+    "សូមរង់ចាំបន្តិច ឬ admin នឹងឆ្លើយវិញឆាប់ៗនេះ។"
+)
+
+
 def _maybe_ai_reply(user_id):
-    """If AI auto-reply is enabled for this teacher, generate and store one."""
+    """If AI auto-reply is enabled for this teacher, generate and store one.
+    On failure (quota exhausted, network error, etc.), store a short apology
+    instead of leaving the teacher's message unanswered with no explanation."""
     user = User.query.get(user_id)
     if not user or not user.chat_ai_enabled:
         return None
+
+    history = _build_ai_history(user_id)
+    if not history or history[-1]["role"] != "user":
+        return None
+
     try:
-        history = _build_ai_history(user_id)
-        if not history or history[-1]["role"] != "user":
-            return None
         reply_text = chat_reply(history)
         if not reply_text:
-            return None
+            reply_text = AI_FAILURE_FALLBACK
     except Exception:
         current_app.logger.exception("AI chat reply failed")
-        return None
+        reply_text = AI_FAILURE_FALLBACK
 
     ai_msg = ChatMessage(user_id=user_id, sender_role="ai", sender_id=None, content=reply_text)
     db.session.add(ai_msg)

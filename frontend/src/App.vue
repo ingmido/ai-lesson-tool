@@ -59,6 +59,9 @@
           <RouterLink v-if="auth.isAdmin" to="/admin" class="nav-link" active-class="nav-link-active">
             <span>⚙️</span> គ្រប់គ្រងអ្នកប្រើ
           </RouterLink>
+          <RouterLink to="/about" class="nav-link" active-class="nav-link-active">
+            <span>ℹ️</span> អំពីយើង
+          </RouterLink>
         </nav>
 
         <div class="p-4 border-t border-slate-100">
