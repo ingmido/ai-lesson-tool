@@ -7,6 +7,7 @@ backend/routes/__pycache__/
 backend/services/__pycache__/
 backend/*.pyc
 backend/app.db
+backend/instance/
 backend/.env
 backend/uploads/*
 !backend/uploads/.gitkeep
