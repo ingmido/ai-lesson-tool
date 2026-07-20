@@ -10,5 +10,6 @@ python-pptx==1.0.2
 anthropic==0.34.2
 google-genai>=0.3.0
 Pillow>=12.0.0
+cloudinary>=1.41.0
 Werkzeug==3.0.4
 gunicorn==22.0.0

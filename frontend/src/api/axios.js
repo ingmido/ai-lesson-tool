@@ -5,6 +5,16 @@ import axios from "axios";
 // so set VITE_API_BASE_URL (e.g. https://your-backend.onrender.com) at build time.
 export const API_ORIGIN = import.meta.env.VITE_API_BASE_URL || "";
 
+// photo_path is either a full Cloudinary URL (new uploads) or a bare local
+// filename (legacy uploads saved before Cloudinary was configured).
+export function resolvePhotoUrl(photoPath) {
+  if (!photoPath) return "";
+  if (photoPath.startsWith("http://") || photoPath.startsWith("https://")) {
+    return photoPath;
+  }
+  return `${API_ORIGIN}/uploads/${photoPath}`;
+}
+
 const api = axios.create({
   baseURL: `${API_ORIGIN}/api`,
 });

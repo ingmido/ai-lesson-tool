@@ -1,12 +1,11 @@
 import os
-import uuid
 from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
-from werkzeug.utils import secure_filename
 from flask_jwt_extended import create_access_token
 
 from extensions import db, bcrypt
 from models import User
+from services.storage import upload_avatar
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -42,9 +41,7 @@ def register():
 
     photo_path = None
     if photo and photo.filename and _allowed(photo.filename):
-        fname = f"{uuid.uuid4().hex}_{secure_filename(photo.filename)}"
-        photo.save(os.path.join(current_app.config["UPLOAD_FOLDER"], fname))
-        photo_path = fname
+        photo_path = upload_avatar(photo, current_app.config["UPLOAD_FOLDER"])
 
     user = User(
         username=username,

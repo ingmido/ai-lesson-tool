@@ -1,12 +1,11 @@
 import os
-import uuid
 from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
-from werkzeug.utils import secure_filename
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from extensions import db, bcrypt
 from models import User
+from services.storage import upload_avatar
 
 profile_bp = Blueprint("profile", __name__)
 
@@ -58,9 +57,7 @@ def update_me():
         user.password_hash = bcrypt.generate_password_hash(data.get("password")).decode("utf-8")
 
     if photo and photo.filename and _allowed(photo.filename):
-        fname = f"{uuid.uuid4().hex}_{secure_filename(photo.filename)}"
-        photo.save(os.path.join(current_app.config["UPLOAD_FOLDER"], fname))
-        user.photo_path = fname
+        user.photo_path = upload_avatar(photo, current_app.config["UPLOAD_FOLDER"])
 
     db.session.commit()
     return jsonify(user.to_dict())
