@@ -118,6 +118,7 @@ class SiteSettings(db.Model):
     contact_specialty = db.Column(db.String(150))
     contact_facebook = db.Column(db.String(150))
     contact_telegram = db.Column(db.String(150))
+    contact_photo_url = db.Column(db.String(500))
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
@@ -128,5 +129,6 @@ class SiteSettings(db.Model):
             "contact_specialty": self.contact_specialty,
             "contact_facebook": self.contact_facebook,
             "contact_telegram": self.contact_telegram,
+            "contact_photo_url": self.contact_photo_url,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
