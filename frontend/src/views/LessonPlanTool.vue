@@ -1,7 +1,11 @@
 <template>
   <div class="max-w-5xl mx-auto">
     <h1 class="text-2xl font-bold text-slate-800 mb-1">📝 កិច្ចតែងការបង្រៀន AI</h1>
-    <p class="text-slate-400 text-sm mb-6">ថតរូប/បញ្ចូលឯកសារ ឬសរសេរខ្លឹមសារមេរៀនផ្ទាល់ ហើយឲ្យ AI បង្កើតកិច្ចតែងការពេញលេញ</p>
+    <p class="text-slate-400 text-sm mb-2">ថតរូប/បញ្ចូលឯកសារ ឬសរសេរខ្លឹមសារមេរៀនផ្ទាល់ ហើយឲ្យ AI បង្កើតកិច្ចតែងការពេញលេញ</p>
+    <p v-if="usage && !usage.unlimited" class="text-xs mb-6" :class="usage.used >= usage.limit ? 'text-red-500' : 'text-slate-400'">
+      ប្រើប្រាស់ថ្ងៃនេះ៖ {{ usage.used }} / {{ usage.limit }} ដង
+    </p>
+    <div v-else class="mb-4"></div>
 
     <div class="grid lg:grid-cols-2 gap-6">
       <!-- Input form -->
@@ -183,6 +187,7 @@ const FieldEdit = defineComponent({
 
 const inputMode = ref("file");
 const files = ref([]);
+const usage = ref(null);
 const form = reactive({ hours: "1", lesson_date: "", method: "inquiry", extra_notes: "", lesson_text: "" });
 const loading = ref(false);
 const saving = ref(false);
@@ -239,6 +244,7 @@ async function handleGenerate() {
     result.value = data.content;
     genId.value = data.generation.id;
     await loadHistory();
+    await loadUsage();
   } catch (e) {
     error.value = e.response?.data?.error || "ការបង្កើតបរាជ័យ សូមព្យាយាមម្តងទៀត";
   } finally {
@@ -275,5 +281,17 @@ function formatDate(d) {
   return d ? new Date(d).toLocaleDateString("km-KH") : "";
 }
 
-onMounted(loadHistory);
+onMounted(() => {
+  loadHistory();
+  loadUsage();
+});
+
+async function loadUsage() {
+  try {
+    const { data } = await api.get("/ai/usage-today");
+    usage.value = data;
+  } catch {
+    // non-critical, ignore
+  }
+}
 </script>

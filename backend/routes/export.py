@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify, current_app, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from models import Generation, User
-from services.docx_export import export_to_docx
+from services.docx_export import export_to_docx, build_google_form_script
 from services.pptx_export import build_pptx
 
 export_bp = Blueprint("export", __name__)
@@ -95,3 +95,29 @@ def export_pdf(gen_id):
 
     pdf_path = out_path.rsplit(".", 1)[0] + ".pdf"
     return send_file(pdf_path, as_attachment=True, download_name=os.path.basename(pdf_path))
+
+
+@export_bp.get("/<int:gen_id>/google-form-script")
+@jwt_required()
+def export_google_form_script(gen_id):
+    """
+    Returns a Google Apps Script (.gs) file. The teacher pastes this into
+    script.google.com and runs it to create a real Google Form quiz under
+    their own account — no Google API credentials needed on our backend.
+    """
+    user_id = int(get_jwt_identity())
+    gen = Generation.query.get_or_404(gen_id)
+    if gen.user_id != user_id:
+        return jsonify({"error": "គ្មានសិទ្ធិចូលមើល"}), 403
+    if gen.tool_type != "test":
+        return jsonify({"error": "អាច Export ទៅ Google Form បានតែពី tool តេស្តប៉ុណ្ណោះ"}), 400
+
+    data = json.loads(gen.content_json) if gen.content_json else {}
+    script_text = build_google_form_script(data)
+
+    fname = f"google_form_script_{gen.id}.gs"
+    out_path = os.path.join(current_app.config["EXPORT_FOLDER"], fname)
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(script_text)
+
+    return send_file(out_path, as_attachment=True, download_name=fname, mimetype="text/plain")

@@ -14,6 +14,7 @@ const routes = [
   { path: "/tools/lesson-plan", name: "lesson-plan", component: () => import("../views/LessonPlanTool.vue"), meta: { requiresAuth: true } },
   { path: "/tools/slide", name: "slide", component: () => import("../views/SlideTool.vue"), meta: { requiresAuth: true } },
   { path: "/tools/test", name: "test", component: () => import("../views/TestTool.vue"), meta: { requiresAuth: true } },
+  { path: "/question-bank", name: "question-bank", component: () => import("../views/QuestionBank.vue"), meta: { requiresAuth: true } },
   { path: "/tools/curriculum", name: "curriculum", component: () => import("../views/CurriculumTool.vue"), meta: { requiresAuth: true } },
   { path: "/:pathMatch(.*)*", redirect: "/" },
 ];

@@ -39,11 +39,16 @@
       <div v-if="result" class="card space-y-4">
         <div class="flex items-center justify-between">
           <h3 class="font-semibold text-slate-800">{{ result.title }}</h3>
-          <div class="flex gap-2">
+          <div class="flex gap-2 flex-wrap">
             <button class="btn-secondary text-xs px-3 py-1.5" @click="doDownload('docx')" :disabled="downloading">⬇ Word</button>
             <button class="btn-secondary text-xs px-3 py-1.5" @click="doDownload('pdf')" :disabled="downloading">⬇ PDF</button>
+            <button class="btn-secondary text-xs px-3 py-1.5" @click="doDownload('google-form-script')" :disabled="downloading">📤 Google Form</button>
+            <button class="btn-secondary text-xs px-3 py-1.5" @click="handleSaveToBank" :disabled="savingToBank">
+              {{ savingToBank ? "កំពុងរក្សាទុក..." : "🗃️ រក្សាទុកទៅធនាគារ" }}
+            </button>
           </div>
         </div>
+        <p v-if="savedToBankMsg" class="text-xs text-emerald-600">{{ savedToBankMsg }}</p>
         <div class="max-h-[600px] overflow-y-auto pr-1 space-y-4">
           <div v-for="(sec, i) in result.sections" :key="i">
             <div class="font-medium text-slate-700 mb-2">{{ sec.section_title }}</div>
@@ -76,12 +81,33 @@ const error = ref("");
 const result = ref(null);
 const genId = ref(null);
 const downloading = ref(false);
+const savingToBank = ref(false);
+const savedToBankMsg = ref("");
+
+async function handleSaveToBank() {
+  if (!genId.value) return;
+  savingToBank.value = true;
+  savedToBankMsg.value = "";
+  try {
+    const { data } = await api.post(`/question-bank/import/${genId.value}`, {
+      subject: "",
+      grade: "",
+      tags: "AI",
+    });
+    savedToBankMsg.value = `បានរក្សាទុកសំណួរ ${data.saved_count} ចូលធនាគារ!`;
+  } catch (e) {
+    error.value = e.response?.data?.error || "ការរក្សាទុកបរាជ័យ";
+  } finally {
+    savingToBank.value = false;
+  }
+}
 
 async function doDownload(format) {
   downloading.value = true;
   error.value = "";
   try {
-    await downloadExport(genId.value, format, `test_${genId.value}.${format}`);
+    const ext = format === "google-form-script" ? "gs" : format;
+    await downloadExport(genId.value, format, `test_${genId.value}.${ext}`);
   } catch (e) {
     error.value =
       format === "pdf"

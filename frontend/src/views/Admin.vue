@@ -5,6 +5,45 @@
 
     <div v-if="message" class="rounded-xl bg-emerald-50 text-emerald-600 text-sm px-4 py-3 mb-4">{{ message }}</div>
 
+    <!-- Stats overview -->
+    <div v-if="stats" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="card">
+        <p class="text-xs text-slate-400 mb-1">អ្នកប្រើសរុប</p>
+        <p class="text-2xl font-bold text-slate-800">{{ stats.total_users }}</p>
+        <p class="text-xs text-emerald-600 mt-1">+{{ stats.new_users_today }} ថ្ងៃនេះ · +{{ stats.new_users_7d }} សប្តាហ៍នេះ</p>
+      </div>
+      <div class="card">
+        <p class="text-xs text-slate-400 mb-1">ការបង្កើត AI (ថ្ងៃនេះ)</p>
+        <p class="text-2xl font-bold text-slate-800">{{ stats.generations_today }}</p>
+        <p class="text-xs text-slate-400 mt-1">{{ stats.generations_7d }} ក្នុង ៧ថ្ងៃ · {{ stats.total_generations }} សរុប</p>
+      </div>
+      <div class="card">
+        <p class="text-xs text-slate-400 mb-1">សារជជែក (Chat)</p>
+        <p class="text-2xl font-bold text-slate-800">{{ stats.total_chat_messages }}</p>
+        <p class="text-xs text-slate-400 mt-1">AI ឆ្លើយ {{ stats.ai_replies_today }} ដងថ្ងៃនេះ</p>
+      </div>
+      <div class="card">
+        <p class="text-xs text-slate-400 mb-2">ប្រើប្រាស់ច្រើនបំផុតថ្ងៃនេះ</p>
+        <div v-if="stats.top_users_today.length" class="space-y-1">
+          <div v-for="t in stats.top_users_today" :key="t.user_id" class="flex justify-between text-xs">
+            <span class="text-slate-600 truncate">{{ t.full_name }}</span>
+            <span class="text-slate-400 shrink-0 ml-2">{{ t.count }}</span>
+          </div>
+        </div>
+        <p v-else class="text-xs text-slate-300">មិនទាន់មានទេ</p>
+      </div>
+    </div>
+
+    <div v-if="stats && Object.keys(stats.by_tool).length" class="card mb-6">
+      <p class="text-xs text-slate-400 mb-3">ការបង្កើតតាមប្រភេទ tool (សរុប)</p>
+      <div class="flex flex-wrap gap-4 text-sm">
+        <div v-for="(count, tool) in stats.by_tool" :key="tool" class="flex items-center gap-2">
+          <span class="text-slate-500">{{ toolLabel(tool) }}</span>
+          <span class="font-semibold text-slate-800">{{ count }}</span>
+        </div>
+      </div>
+    </div>
+
     <div class="card overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
@@ -59,11 +98,27 @@ import { ref, onMounted } from "vue";
 import api from "../api/axios";
 
 const users = ref([]);
+const stats = ref(null);
 const message = ref("");
+
+const TOOL_LABELS = {
+  lesson_plan: "កិច្ចតែងការ",
+  slide: "ស្លាយ",
+  test: "តេស្ត",
+  curriculum: "កម្មវិធីសិក្សា",
+};
+function toolLabel(tool) {
+  return TOOL_LABELS[tool] || tool;
+}
 
 async function load() {
   const { data } = await api.get("/admin/users");
   users.value = data;
+}
+
+async function loadStats() {
+  const { data } = await api.get("/admin/stats");
+  stats.value = data;
 }
 
 async function updateUser(u, patch) {
@@ -79,5 +134,8 @@ async function removeUser(u) {
   await load();
 }
 
-onMounted(load);
+onMounted(() => {
+  load();
+  loadStats();
+});
 </script>

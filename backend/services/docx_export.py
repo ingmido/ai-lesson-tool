@@ -279,3 +279,65 @@ def export_to_docx(tool_type, data, output_path, **kwargs):
     if not builder:
         raise ValueError(f"គ្មាន docx builder សម្រាប់ {tool_type}")
     return builder(data, output_path, **kwargs) if tool_type == "lesson_plan" else builder(data, output_path)
+
+
+def _js_string(s):
+    """Escape a Python string for safe embedding inside a JS single-quoted string literal."""
+    if s is None:
+        s = ""
+    return (
+        str(s)
+        .replace("\\", "\\\\")
+        .replace("'", "\\'")
+        .replace("\n", "\\n")
+        .replace("\r", "")
+    )
+
+
+def build_google_form_script(data):
+    """
+    Builds a Google Apps Script (.gs) source that, when pasted into
+    script.google.com and run, creates a Google Form quiz matching this
+    test's questions. This avoids needing server-side Google OAuth —
+    the script runs under the teacher's own Google account.
+    """
+    title = _js_string(data.get("title", "តេស្ត"))
+    instructions = _js_string(data.get("instructions", ""))
+
+    lines = []
+    lines.append("function createFormFromTest() {")
+    lines.append(f"  var form = FormApp.create('{title}');")
+    lines.append("  form.setIsQuiz(true);")
+    if instructions:
+        lines.append(f"  form.setDescription('{instructions}');")
+    lines.append("")
+
+    q_num = 0
+    for section in data.get("sections", []):
+        section_title = _js_string(section.get("section_title", ""))
+        if section_title:
+            lines.append(f"  form.addSectionHeaderItem().setTitle('{section_title}');")
+        for q in section.get("questions", []):
+            q_num += 1
+            question_text = _js_string(q.get("question", ""))
+            choices = q.get("choices")
+            answer = _js_string(q.get("answer", ""))
+
+            if choices:
+                lines.append(f"  var q{q_num} = form.addMultipleChoiceItem();")
+                lines.append(f"  q{q_num}.setTitle('{question_text}');")
+                choice_lines = ", ".join(f"q{q_num}.createChoice('{_js_string(c)}')" for c in choices)
+                lines.append(f"  q{q_num}.setChoices([{choice_lines}]);")
+                lines.append(f"  q{q_num}.setPoints(1);")
+            else:
+                lines.append(f"  var q{q_num} = form.addParagraphTextItem();")
+                lines.append(f"  q{q_num}.setTitle('{question_text}');")
+                lines.append(f"  q{q_num}.setPoints(1);")
+            if answer:
+                lines.append(f"  // ចម្លើយត្រឹមត្រូវ៖ {answer}")
+            lines.append("")
+
+    lines.append("  Logger.log('Form created: ' + form.getEditUrl());")
+    lines.append("  Logger.log('Share link: ' + form.getPublishedUrl());")
+    lines.append("}")
+    return "\n".join(lines)

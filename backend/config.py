@@ -35,3 +35,8 @@ class Config:
     EXPORT_FOLDER = os.path.join(BASE_DIR, "exports")
     MAX_CONTENT_LENGTH = 25 * 1024 * 1024  # 25MB
     ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "pdf", "docx"}
+
+    # Per-teacher daily caps, to protect the shared AI quota from being
+    # exhausted by one or two heavy users. Admins are exempt. 0 = unlimited.
+    MAX_AI_GENERATIONS_PER_DAY = int(os.environ.get("MAX_AI_GENERATIONS_PER_DAY", "8"))
+    MAX_AI_CHAT_REPLIES_PER_DAY = int(os.environ.get("MAX_AI_CHAT_REPLIES_PER_DAY", "15"))

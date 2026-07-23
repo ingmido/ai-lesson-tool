@@ -1,10 +1,10 @@
 import os
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, time
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 from extensions import db
 from models import Generation
@@ -20,6 +20,23 @@ def _allowed(filename):
     return ext in current_app.config["ALLOWED_EXTENSIONS"]
 
 
+def _today_generation_count(user_id):
+    today_start = datetime.combine(datetime.utcnow().date(), time.min)
+    return Generation.query.filter(
+        Generation.user_id == user_id,
+        Generation.created_at >= today_start,
+    ).count()
+
+
+@ai_bp.get("/usage-today")
+@jwt_required()
+def usage_today():
+    user_id = int(get_jwt_identity())
+    limit = current_app.config["MAX_AI_GENERATIONS_PER_DAY"]
+    used = _today_generation_count(user_id)
+    return jsonify({"used": used, "limit": limit, "unlimited": limit <= 0})
+
+
 @ai_bp.post("/<tool_type>/generate")
 @jwt_required()
 def generate(tool_type):
@@ -27,6 +44,15 @@ def generate(tool_type):
         return jsonify({"error": "tool_type មិនត្រឹមត្រូវ"}), 400
 
     user_id = int(get_jwt_identity())
+    is_admin = get_jwt().get("role") == "admin"
+
+    limit = current_app.config["MAX_AI_GENERATIONS_PER_DAY"]
+    if not is_admin and limit > 0:
+        used = _today_generation_count(user_id)
+        if used >= limit:
+            return jsonify({
+                "error": f"អ្នកបានប្រើប្រាស់ AI លើសកំណត់ថ្ងៃនេះហើយ ({limit} ដង/ថ្ងៃ)។ សូមព្យាយាមម្តងទៀតថ្ងៃស្អែក ឬទាក់ទង admin។"
+            }), 429
 
     hours = request.form.get("hours", "")
     lesson_date = request.form.get("lesson_date", "")

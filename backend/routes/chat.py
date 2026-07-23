@@ -1,4 +1,5 @@
 from functools import wraps
+from datetime import datetime, time
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from sqlalchemy import func
@@ -39,9 +40,23 @@ def _build_ai_history(user_id, limit=20):
     return history
 
 
+def _today_ai_reply_count(user_id):
+    today_start = datetime.combine(datetime.utcnow().date(), time.min)
+    return ChatMessage.query.filter(
+        ChatMessage.user_id == user_id,
+        ChatMessage.sender_role == "ai",
+        ChatMessage.created_at >= today_start,
+    ).count()
+
+
 AI_FAILURE_FALLBACK = (
     "🤖 សូមទោស! AI ជំនួយការមិនអាចឆ្លើយបានទេពេលនេះ (ប្រព័ន្ធកំពុងមមាញឹក ឬដល់ដែនកំណត់ប្រើប្រាស់ថ្ងៃនេះ)។ "
     "សូមរង់ចាំបន្តិច ឬ admin នឹងឆ្លើយវិញឆាប់ៗនេះ។"
+)
+
+AI_DAILY_LIMIT_MESSAGE = (
+    "🤖 អ្នកបានឈាន់ដល់ចំនួនកំណត់នៃការឆ្លើយតបដោយ AI សម្រាប់ថ្ងៃនេះហើយ។ "
+    "សូមទាក់ទង admin ដោយផ្ទាល់ ឬសរសេរសារបន្ថែម admin នឹងឆ្លើយវិញ។"
 )
 
 
@@ -56,6 +71,22 @@ def _maybe_ai_reply(user_id):
     history = _build_ai_history(user_id)
     if not history or history[-1]["role"] != "user":
         return None
+
+    daily_limit = current_app.config.get("MAX_AI_CHAT_REPLIES_PER_DAY", 0)
+    if daily_limit > 0 and _today_ai_reply_count(user_id) >= daily_limit:
+        # Only send the "limit reached" notice once per day, not on every message.
+        already_notified = ChatMessage.query.filter(
+            ChatMessage.user_id == user_id,
+            ChatMessage.sender_role == "ai",
+            ChatMessage.content == AI_DAILY_LIMIT_MESSAGE,
+            ChatMessage.created_at >= datetime.combine(datetime.utcnow().date(), time.min),
+        ).first()
+        if already_notified:
+            return None
+        ai_msg = ChatMessage(user_id=user_id, sender_role="ai", sender_id=None, content=AI_DAILY_LIMIT_MESSAGE)
+        db.session.add(ai_msg)
+        db.session.commit()
+        return ai_msg
 
     try:
         reply_text = chat_reply(history)

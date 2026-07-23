@@ -132,3 +132,35 @@ class SiteSettings(db.Model):
             "contact_photo_url": self.contact_photo_url,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class QuestionBankItem(db.Model):
+    """A teacher's personal bank of reusable exam questions."""
+    __tablename__ = "question_bank_items"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+
+    subject = db.Column(db.String(150))
+    grade = db.Column(db.String(50))
+    question_type = db.Column(db.String(20), default="mcq")  # 'mcq' | 'short'
+    question_text = db.Column(db.Text, nullable=False)
+    choices_json = db.Column(db.Text)  # JSON list of strings; null for short-answer
+    answer = db.Column(db.Text)
+    tags = db.Column(db.String(255))  # comma-separated
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        import json as _json
+        return {
+            "id": self.id,
+            "subject": self.subject,
+            "grade": self.grade,
+            "question_type": self.question_type,
+            "question_text": self.question_text,
+            "choices": _json.loads(self.choices_json) if self.choices_json else None,
+            "answer": self.answer,
+            "tags": [t for t in (self.tags or "").split(",") if t],
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }

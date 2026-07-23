@@ -37,6 +37,9 @@
           <RouterLink to="/tools/test" class="nav-link" active-class="nav-link-active">
             <span>🧪</span> តេស្តស្តង់ដារ
           </RouterLink>
+          <RouterLink to="/question-bank" class="nav-link" active-class="nav-link-active">
+            <span>🗃️</span> ធនាគារសំណួរ
+          </RouterLink>
           <RouterLink to="/tools/curriculum" class="nav-link" active-class="nav-link-active">
             <span>🗂️</span> បំបែងចែកកម្មវិធីសិក្សា
           </RouterLink>
